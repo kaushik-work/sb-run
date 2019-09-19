@@ -24,6 +24,7 @@ def pack(path: pathlib.Path):
     cwl = load_yaml(path)
     pack_requirements(cwl, path)
     pack_steps(cwl, path)
+    express_maps_as_lists(cwl)
     return cwl
 
 
@@ -49,6 +50,34 @@ def list_as_map(node, key_field):
                 else:
                     # This is a problem
                     pass
+
+    return new_node
+
+
+def express_maps_as_lists(cwl: dict):
+    cwl["inputs"] = map_as_list(cwl["inputs"], key_field="id", predicate_field="type")
+    cwl["outputs"] = map_as_list(cwl["outputs"], key_field="id", predicate_field="type")
+    if "steps" in cwl:
+        cwl["steps"] = map_as_list(cwl["steps"], key_field="id", predicate_field=None)
+
+
+# SBG PLA insists on lists ...
+def map_as_list(node, key_field, predicate_field):
+    if isinstance(node, list):
+        return node
+
+    new_node = []
+    if isinstance(node, dict):
+        for k, _item in node.items():
+            if not isinstance(_item, dict):
+                _item = {
+                    key_field: k,
+                    predicate_field: _item
+                }
+            if isinstance(_item, dict):
+                if key_field not in _item:
+                    _item[key_field] = k
+            new_node += [_item]
 
     return new_node
 
@@ -102,15 +131,6 @@ def extract_schemadefs(field: dict, path: pathlib.Path):
                         _name = _name_prefix + "#" + _type["name"]
                         user_types[_name] = _type
     return user_types
-
-
-# def extract_typedefs(req_types: list):
-#     user_types = {}
-#     for _typ in req_types:
-#         k = _typ.get("name")
-#         if k is not None:
-#             user_types[k] = _typ
-#     return user_types
 
 
 def resolve_typedefs(port: str, cwl: dict, user_types: dict):
