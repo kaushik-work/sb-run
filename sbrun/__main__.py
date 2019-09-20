@@ -1,12 +1,3 @@
-"""
-
-push <cwl> <profile> <user> <project> <appid>
-push <cwl>
-
-run <cwl> <profile> <user> <project> <appid>
-run <cwl>
-
-"""
 #  Copyright (c) 2019 Seven Bridges. See LICENSE
 
 import sys
@@ -20,6 +11,7 @@ from ruamel.yaml.scanner import ScannerError
 
 from .pack import pack
 from .push import push_to_sbpla
+from .run import run_on_sbpla
 
 import logging
 logger = logging.getLogger()
@@ -31,14 +23,18 @@ sbg_cache_ext = ".sbpush.cache.yml"
 
 def parse_args():
 
-    if len(sys.argv) == 6:
+    if len(sys.argv) == 7:
         return {
             "cwl": sys.argv[1],
-            "profile": sys.argv[2],
-            "user": sys.argv[3],
-            "project": sys.argv[4],
-            "app_id": sys.argv[5]
+            "commit message": sys.argv[2],
+            "profile": sys.argv[3],
+            "user": sys.argv[4],
+            "project": sys.argv[5],
+            "app_id": sys.argv[6]
         }
+
+    if len(sys.argv) == 3:
+        return retrieve_cache(pathlib.Path(sys.argv[1]), commit_message=sys.argv[2])
 
     if len(sys.argv) == 2:
         return retrieve_cache(pathlib.Path(sys.argv[1]))
@@ -46,21 +42,7 @@ def parse_args():
     return {}
 
 
-def print_usage():
-    print(
-"""
-push <cwl> <profile> <user> <project> <appid> <message>
-push <cwl> <message>
-
-run <cwl> <profile> <user> <project> <appid>
-run <cwl>
-
-The 
-"""
-    )
-
-
-def retrieve_cache(cwl: str):
+def retrieve_cache(cwl: str, commit_message=None):
     config = Configuration()
     sbg_cache_file = config.scratch_path / \
                      pathlib.Path(*pathlib.Path(cwl).absolute().with_suffix(sbg_cache_ext).parts[1:])
@@ -73,6 +55,9 @@ def retrieve_cache(cwl: str):
             logger.error(f"Error loading SBG cache file {sbg_cache_file}")
     else:
         logger.error(f"No SBG cache file {sbg_cache_file}")
+
+    if commit_message is not None:
+        cache_data["commit message"] = commit_message
 
     return cache_data
 
@@ -93,16 +78,15 @@ def push():
     if "profile" not in args:
         print(
 """
-sbpush <cwl> <profile> <user> <project> <appid>
+sbpush <cwl> <commit message> <profile> <user> <project> <app_id>
+sbpush <cwl> <commit message>
 sbpush <cwl>
 """
         )
         sys.exit(1)
 
     cwl_dict = pack(pathlib.Path(args["cwl"]))
-    import json
-    open("test.json", "w").write(json.dumps(cwl_dict, indent=2))
-    push_to_sbpla(cwl_dict, commit_message="Test commit message",
+    push_to_sbpla(cwl_dict, commit_message=args["commit message"],
                   profile=args["profile"], user=args["user"],
                   project=args["project"], app_id=args["app_id"])
     save_cache(args["cwl"], args)
@@ -119,4 +103,8 @@ sbrun <cwl>
         )
         sys.exit(1)
 
+    task = run_on_sbpla(profile=args["profile"], user=args["user"], project=args["project"],
+                        app_id=args["app_id"],
+                        old_task_id=args.get("old task id"))
+    args["old task id"] = task.id
     save_cache(args["cwl"], args)

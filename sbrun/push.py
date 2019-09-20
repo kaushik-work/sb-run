@@ -1,5 +1,8 @@
 #  Copyright (c) 2019 Seven Bridges. See LICENSE
 
+import hashlib
+import json
+
 import sevenbridges.errors as sbgerr
 
 from ruamel.yaml import YAML
@@ -12,6 +15,7 @@ logging.getLogger("sevenbridges.http.client").propagate = False
 logging.getLogger("urllib3.connectionpool").propagate = False
 
 fast_load = YAML(typ='safe')
+app_hash_key = 'sbg:hash'
 
 
 def push_to_sbpla(cwl: dict, commit_message: str,
@@ -36,3 +40,9 @@ def push_to_sbpla(cwl: dict, commit_message: str,
             id=app_path,
             raw=cwl
         )
+
+
+def calc_app_hash(cwl):
+    sha = hashlib.sha512()
+    sha.update(json.dumps(cwl, sort_keys=True).encode('utf-8'))
+    return sha.hexdigest()

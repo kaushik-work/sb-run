@@ -1,4 +1,4 @@
-# SbRun: tools to run CWL on Seven Bridges powered platforms
+# SBRun: tools to run CWL on Seven Bridges powered platforms
 
 This package offers two command line tools `sbpush` and `sbrun` that
 push and run CWL tools on any Seven Bridges platform.
@@ -10,14 +10,12 @@ sbpush <cwl>
 ```
 
 ```
-sbrun <cwl> <profile> <user> <project> <app_id>
-sbrun <cwl> 
 sbrun <cwl>
 ```
 
 
-`sbpush` uploads a CWL document to a SB platform. `sbrun` pushes (if
-needed) and runs the CWL document. 
+`sbpush` uploads a CWL document to a SB platform. `sbrun` runs the CWL
+document.
 
 If `<profile> <user> <project> <app_id>` are not supplied, `sbrun` looks
 in its cache for them as stored from a previous call. If a task has been
